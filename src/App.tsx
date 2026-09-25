@@ -1,9 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Check, Trash2, X, Mail, Phone, User, ClipboardList, Loader2,
-  Pencil, Clock, Flag, Calendar, Hourglass,
+  Pencil, Clock, Flag, Calendar, Hourglass, Timer, Play,
 } from 'lucide-react';
 import { supabase, type Task } from '@/lib/supabase';
+import SessionPlanner from '@/SessionPlanner';
+import FocusSession from '@/FocusSession';
+import { type ActiveSession, loadSession, saveSession } from '@/lib/session';
 
 type FilterTab = 'all' | 'pending' | 'waiting' | 'completed';
 type Priority = 'high' | 'medium' | 'low';
@@ -82,6 +85,48 @@ export default function App() {
   const [editTarget, setEditTarget] = useState<Task | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [showPlanner, setShowPlanner] = useState(false);
+  const [session, setSessionState] = useState<ActiveSession | null>(() => loadSession());
+  const [sessionHidden, setSessionHidden] = useState(false);
+
+  const setSession = (s: ActiveSession | null) => {
+    setSessionState(s);
+    saveSession(s);
+  };
+
+  const startSession = (budgetMinutes: number, queue: string[]) => {
+    const t = Date.now();
+    setSession({
+      budgetMinutes,
+      queue,
+      index: 0,
+      outcomes: {},
+      elapsedMs: 0,
+      runningSince: t,
+      taskElapsedMs: 0,
+      taskRunningSince: t,
+      startedAt: t,
+      finished: false,
+    });
+    setShowPlanner(false);
+    setSessionHidden(false);
+  };
+
+  /** Used by the focus view: set a task's status and keep local state in sync. */
+  const setTaskStatus = async (task: Task, status: Task['status']) => {
+    const completedAt = status === 'completed' ? new Date().toISOString() : null;
+    const { error: updateError } = await supabase
+      .from('tasks')
+      .update({ status, completed_at: completedAt })
+      .eq('id', task.id);
+    if (updateError) {
+      setError(updateError.message);
+      setSessionHidden(true);
+      return false;
+    }
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status, completed_at: completedAt } : t)));
+    return true;
+  };
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -204,6 +249,15 @@ export default function App() {
                 </p>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+            <button
+              onClick={() => (session ? setSessionHidden(false) : setShowPlanner(true))}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 px-3 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/10 active:scale-[0.98] sm:px-4"
+            >
+              <Timer className="h-4 w-4" />
+              <span className="hidden sm:inline">{session ? 'Resume Session' : 'Start Session'}</span>
+              <span className="sm:hidden">{session ? 'Resume' : 'Session'}</span>
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-slate-950 transition-colors hover:bg-emerald-400 active:scale-[0.98] sm:px-4"
@@ -212,6 +266,7 @@ export default function App() {
               <span className="hidden sm:inline">Add Task</span>
               <span className="sm:hidden">Add</span>
             </button>
+            </div>
           </div>
         </div>
       </header>
@@ -239,6 +294,22 @@ export default function App() {
             onClick={() => setFilter('completed')}
           />
         </div>
+
+        {/* Session in progress banner */}
+        {session && sessionHidden && (
+          <button
+            onClick={() => setSessionHidden(false)}
+            className="mb-4 flex w-full items-center justify-between gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-left text-sm text-emerald-300 transition-colors hover:bg-emerald-500/15"
+          >
+            <span className="flex items-center gap-2">
+              <Timer className="h-4 w-4" />
+              {session.finished ? 'Session finished — see your wrap-up' : 'Work session in progress'}
+            </span>
+            <span className="inline-flex items-center gap-1 font-medium">
+              <Play className="h-3.5 w-3.5" /> Resume
+            </span>
+          </button>
+        )}
 
         {/* Error banner */}
         {error && (
@@ -297,6 +368,23 @@ export default function App() {
             setEditTarget(null);
           }}
           onError={(msg) => setError(msg)}
+        />
+      )}
+
+      {/* Session planner */}
+      {showPlanner && (
+        <SessionPlanner tasks={tasks} onClose={() => setShowPlanner(false)} onStart={startSession} />
+      )}
+
+      {/* Focus mode */}
+      {session && !sessionHidden && !loading && (
+        <FocusSession
+          session={session}
+          tasks={tasks}
+          onChange={setSession}
+          onSetStatus={setTaskStatus}
+          onMinimize={() => setSessionHidden(true)}
+          onClose={() => setSession(null)}
         />
       )}
 
