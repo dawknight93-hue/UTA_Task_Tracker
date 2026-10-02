@@ -224,7 +224,7 @@ export default function FocusSession({
                     {upNext.map((t) => (
                       <li key={t.id} className="flex items-center gap-3 rounded-lg border border-slate-800 px-3 py-2 text-sm">
                         <span className="w-24 shrink-0 truncate font-medium text-slate-300">{t.poc}</span>
-                        <span className="min-w-0 flex-1 truncate text-slate-400">{t.task_notes}</span>
+                        <span className="min-w-0 flex-1 truncate text-slate-400">{t.subject || t.task_notes}</span>
                         <span className="shrink-0 text-xs text-slate-500">{estimateOf(t)}m</span>
                       </li>
                     ))}
@@ -269,6 +269,7 @@ function CurrentTask({ task, taskMs }: { task: Task; taskMs: number }) {
           </span>
         )}
       </div>
+      {task.subject && <p className="mb-1 text-base font-semibold text-white">{task.subject}</p>}
       <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-200">{task.task_notes}</p>
       <div className={`mt-4 inline-flex items-center gap-1.5 text-sm ${overEst ? 'text-amber-400' : 'text-slate-400'}`}>
         <Clock className="h-4 w-4" />
@@ -331,7 +332,7 @@ function Summary({
                 {items.map((t) => (
                   <li key={t.id} className="rounded-lg border border-slate-800 px-3 py-2 text-sm">
                     <span className="font-medium text-slate-200">{t.poc}</span>
-                    <span className="text-slate-400"> — {t.task_notes}</span>
+                    <span className="text-slate-400"> — {t.subject || t.task_notes}</span>
                   </li>
                 ))}
               </ul>
