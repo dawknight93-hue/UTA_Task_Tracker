@@ -9,6 +9,7 @@ export type Task = {
   id: string;
   poc: string;
   contact_method: string;
+  subject: string | null;
   task_notes: string;
   status: 'pending' | 'waiting' | 'completed';
   created_at: string;
@@ -21,5 +22,6 @@ export type Task = {
 export type TaskInsert = {
   poc: string;
   contact_method: string;
+  subject?: string | null;
   task_notes: string;
 };
