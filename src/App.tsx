@@ -508,6 +508,15 @@ function TaskCard({
               </span>
             )}
           </div>
+          {task.subject && (
+            <p
+              className={`mb-0.5 text-sm font-semibold ${
+                isCompleted ? 'text-slate-500 line-through' : 'text-white'
+              }`}
+            >
+              {task.subject}
+            </p>
+          )}
           <p
             className={`text-sm leading-relaxed ${
               isCompleted ? 'text-slate-500 line-through' : 'text-slate-300'
@@ -618,6 +627,7 @@ function TaskFormModal({
   const isEdit = mode === 'edit';
   const [poc, setPoc] = useState(task?.poc ?? '');
   const [contactMethod, setContactMethod] = useState(task?.contact_method ?? '');
+  const [subject, setSubject] = useState(task?.subject ?? '');
   const [taskNotes, setTaskNotes] = useState(task?.task_notes ?? '');
   const [status, setStatus] = useState<Task['status']>(task?.status ?? 'pending');
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | null>(task?.estimated_minutes ?? null);
@@ -635,6 +645,7 @@ function TaskFormModal({
     const payload = {
       poc: poc.trim(),
       contact_method: contactMethod.trim(),
+      subject: subject.trim() || null,
       task_notes: taskNotes.trim(),
       estimated_minutes: estimatedMinutes,
       priority,
@@ -726,6 +737,20 @@ function TaskFormModal({
               <option value="Teams">Teams</option>
               <option value="Text">Text</option>
             </select>
+          </Field>
+
+          <Field label="Subject">
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="2–4 words, e.g. Update leave form"
+              maxLength={60}
+              className="input-base"
+            />
+            {subject.trim().split(/\s+/).filter(Boolean).length > 4 && (
+              <p className="mt-1 text-xs text-amber-400">Tip: keep the subject to 2–4 words — details go in Notes.</p>
+            )}
           </Field>
 
           <Field label="Task Notes">
