@@ -230,7 +230,10 @@ function PlanRow({
             </span>
           )}
         </div>
-        <p className="truncate text-sm text-slate-300">{task.task_notes}</p>
+        <p className="truncate text-sm text-slate-300">
+          {task.subject ? <span className="font-medium text-white">{task.subject} · </span> : null}
+          {task.task_notes}
+        </p>
       </div>
       <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs text-slate-400">
         <Clock className="h-3 w-3" />
