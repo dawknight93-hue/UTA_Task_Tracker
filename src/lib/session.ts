@@ -130,7 +130,7 @@ export function saveSession(s: ActiveSession | null) {
 
 /** Plain-text status update to paste into an email or Teams message. */
 export function buildStatusReport(session: ActiveSession, tasksById: Map<string, Task>) {
-  const line = (t: Task) => `- ${t.poc}: ${t.task_notes}`;
+  const line = (t: Task) => `- ${t.poc}: ${t.subject ? `${t.subject} — ` : ''}${t.task_notes}`;
   const pick = (o: Outcome | undefined) =>
     session.queue
       .filter((id) => session.outcomes[id] === o)
